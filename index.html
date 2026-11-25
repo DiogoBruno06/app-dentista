@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atlas da face</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body data-view="home">
+<section class="home" id="home" aria-labelledby="homeTitle">
+  <figure class="hero">
+    <img id="heroImg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Crânio em 3D com os músculos da face" hidden>
+    <span class="hero-wait" id="heroWait">Preparando o modelo 3D…</span>
+  </figure>
+  <div class="home-text">
+    <h1 id="homeTitle">Atlas da face</h1>
+    <p class="lede">Músculos da face e da mastigação, ATM e nervo trigêmeo em 3D, para estudar e consultar na clínica.</p>
+    <nav class="home-actions" aria-label="Escolha por onde começar">
+      <a class="go go-main" href="#atlas">
+        <span class="go-t">Abrir o atlas</span>
+        <span class="go-s">Crânio em 3D, fichas, cortes e movimentos</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </a>
+      <a class="go" href="#notas">
+        <span class="go-t">Minhas anotações</span>
+        <span class="go-s" id="homeCount">Nenhuma anotação ainda</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </nav>
+    <p class="home-fine">Modelo 3D: Z-Anatomy (CC BY-SA 4.0). Referência dos textos: Rossi, <i>Anatomia craniofacial aplicada à odontologia</i>, 2ª ed., 2017.</p>
+  </div>
+</section>
+
+<section class="notesview" id="notesView" aria-labelledby="notesTitle">
+  <header class="nv-top">
+    <a class="icon" href="#" aria-label="Voltar ao início">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <h1 id="notesTitle">Minhas anotações</h1>
+  </header>
+  <label class="nv-search"><span class="sr">Buscar nas anotações</span>
+    <input type="search" id="nvSearch" placeholder="Buscar estrutura ou palavra">
+  </label>
+  <div class="nv-list" id="nvList"></div>
+</section>
+
+<div class="app">
+  <header class="top">
+    <a class="icon back" href="#" aria-label="Voltar ao início">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <div class="top-t">
+      <h1>Atlas da face</h1>
+      <p class="sub" id="catNote">Músculos da expressão facial · nervo facial (VII)</p>
+    </div>
+    <button class="icon" id="reset" aria-label="Voltar à vista inicial">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v3.7h3.7"/></svg>
+    </button>
+  </header>
+
+  <main class="viewer" id="viewer">
+    <canvas id="c" aria-label="Crânio em 3D. Arraste para girar."></canvas>
+    <svg class="lines" id="lines" aria-hidden="true">
+      <line id="lead" pathLength="1"/>
+      <circle id="halo" r="10"/>
+      <circle id="dot" r="4"/>
+    </svg>
+    <div class="tag" id="tag" aria-hidden="true"></div>
+    <p class="hint" id="hint">Arraste para girar · pinça para aproximar · toque numa estrutura</p>
+    <p class="caption" id="caption" aria-live="polite"></p>
+    <div class="vtools">
+      <button class="vbtn" id="view" aria-pressed="false" aria-controls="viewbar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3.5c4.4 0 7.5 3 7.5 7.2 0 .8.6 1.4 1.3 2.2l1 1.1-1.8.8v2.4c0 1.2-1 2.1-2.2 2.1h-1.6V21H7.5v-4c-1.9-1.4-3-3.6-3-6.3C4.5 6.7 6 3.5 9 3.5z"/></svg>
+        <span>Vista</span>
+      </button>
+      <button class="vbtn" id="cut" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 7.5c0-2.5 3-4.5 7-4.5M19 7.5c0-2.5-3-4.5-7-4.5M5 7.5v6c0 3.6 3.1 6.5 7 6.5M19 7.5v6c0 3.6-3.1 6.5-7 6.5" stroke-dasharray="0"/></svg>
+        <span>Corte</span>
+      </button>
+      <button class="vbtn" id="skin" hidden aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-3.6 0-6 2.9-6 6.6 0 2.3.8 4.2 1.6 5.6.5.9.8 1.9.8 2.9V20h7.2v-1.9c0-1 .3-2 .8-2.9.8-1.4 1.6-3.3 1.6-5.6C18 5.9 15.6 3 12 3z"/></svg>
+        <span>Pele</span>
+      </button>
+    </div>
+    <div class="cutbar" id="cutbar" hidden>
+      <div class="seg" role="group" aria-label="Plano de corte">
+        <button data-axis="x" aria-pressed="true">Sagital</button>
+        <button data-axis="z" aria-pressed="false">Coronal</button>
+        <button data-axis="y" aria-pressed="false">Horizontal</button>
+      </div>
+      <label class="range"><span>Profundidade</span><input type="range" id="cutRange" min="0" max="100" value="50"></label>
+    </div>
+    <div class="cutbar viewbar" id="viewbar" hidden>
+      <div class="seg" role="group" aria-label="Vista anatômica">
+        <button data-norma="lateral" aria-pressed="false">Lateral</button>
+        <button data-norma="oblique" aria-pressed="false">¾</button>
+        <button data-norma="frontal" aria-pressed="false">Frontal</button>
+        <button data-norma="medial" aria-pressed="false">Medial</button>
+      </div>
+      <div class="seg" role="group" aria-label="Lado do paciente">
+        <button data-side="-1" aria-pressed="false" aria-label="Lado direito">Dir.</button>
+        <button data-side="1" aria-pressed="false" aria-label="Lado esquerdo">Esq.</button>
+      </div>
+      <p class="vnote" id="vnote"></p>
+    </div>
+    <div class="loading" id="loading">Montando o crânio…</div>
+  </main>
+
+  <nav class="panel" aria-label="Estruturas">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="list" id="list"></div>
+  </nav>
+
+  <section class="sheet" id="sheet" aria-hidden="true" aria-labelledby="sTitle">
+    <header class="sh">
+      <span class="sdot" aria-hidden="true"></span>
+      <div class="st"><h2 id="sTitle"></h2><p id="sAlt"></p></div>
+      <button class="icon" id="close" aria-label="Fechar ficha">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </header>
+    <div class="body" id="sBody">
+      <button class="play mplay" id="mplay" hidden aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>
+        <span>Ver o movimento</span>
+      </button>
+      <figure class="ov">
+        <canvas id="ov" width="480" height="300" aria-label="Vista geral do crânio com a estrutura destacada"></canvas>
+        <span class="ovdot" id="ovdot" aria-hidden="true"></span>
+        <figcaption>Vista geral: onde fica</figcaption>
+      </figure>
+      <dl class="rows" id="sRows"></dl>
+      <figure class="plate">
+        <button id="plateBtn" aria-label="Ampliar a prancha de referência"><img id="plateImg" src="assets/gray/Gray378.png" alt="Músculos da cabeça, da face e do pescoço"></button>
+        <figcaption id="plateCap"></figcaption>
+      </figure>
+      <section class="notes">
+        <label for="note">Minhas anotações</label>
+        <textarea id="note" rows="4" placeholder="Observações, dicas para a prova, casos da clínica…"></textarea>
+        <p class="nstatus" id="nstatus" aria-live="polite"></p>
+      </section>
+    </div>
+    <footer class="snav">
+      <button class="ghost" id="prev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Anterior</button>
+      <span id="count"></span>
+      <button class="ghost" id="next">Próxima<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+    </footer>
+  </section>
+</div>
+<div class="lightbox" id="lightbox" hidden>
+  <img id="lbImg" src="assets/gray/Gray378.png" alt="">
+  <button class="icon" id="lbClose" aria-label="Fechar a prancha">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+</div>
+<script type="module" src="home.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
