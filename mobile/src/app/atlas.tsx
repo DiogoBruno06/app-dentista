@@ -3,8 +3,8 @@ import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import Animated, { Easing, FadeInDown, FadeOut, FadeOutDown } from 'react-native-reanimated';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
+import Animated, { Easing, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATS, ITEMS } from '@/data/data';
 import { setNote, useNotes } from '@/data/notes';
@@ -12,7 +12,7 @@ import { plateFor } from '@/data/plates';
 import { AtlasEngine, AtlasUI, CAT, currentItems } from "@/engine/atlas";
 import { CUT_AXES, VIEWS } from '@/engine/scripts';
 import { Icon, Press, T, tick } from '@/ui/kit';
-import { Sheet, SheetRef } from '@/ui/Sheet';
+import { SIDE_W, Sheet, SheetRef } from '@/ui/Sheet';
 import { Viewer } from '@/ui/Viewer';
 import { EASE_OUT, F, usePalette } from '@/ui/theme';
 
@@ -31,6 +31,12 @@ export default function Atlas() {
   const [bottom, setBottom] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const sheet = useRef<SheetRef>(null);
+  // Tela larga: ficha fixa à direita; o modelo e os controles ocupam o resto.
+  const { width } = useWindowDimensions();
+  const wide = width >= 900;
+  const side = wide ? SIDE_W + 32 : 12;
+  useEffect(() => { eng?.setInsetRight(wide ? SIDE_W + 32 : 0); if (wide) eng?.setInsetBottom(0); }, [eng, wide]);
+  const above = (wide ? ins.bottom + 16 : bottom) + 12;
 
   useEffect(() => { if (!eng) return; const off = eng.onChange(u => setUi({ ...u })); return () => { off(); }; }, [eng]);
   useEffect(() => { if (eng && open) eng.select(open); }, [eng, open]);
@@ -52,10 +58,10 @@ export default function Atlas() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg, overflow: 'hidden' }}>
-      <Viewer onEngine={setEng} label={sel?.name ?? null} accent={accent} onError={setError} />
+      <Viewer onEngine={setEng} label={sel?.name ?? null} accent={accent} onError={setError} reserveRight={wide ? SIDE_W + 32 : 0} />
 
       {/* Barra de cima */}
-      <View style={[styles.top, { paddingTop: ins.top + 4 }]} pointerEvents="box-none">
+      <View style={[styles.top, { paddingTop: ins.top + 4, paddingRight: side }]} pointerEvents="box-none">
         <Glass style={styles.round}><Press onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} style={styles.roundIn} accessibilityLabel="Voltar ao início"><Icon name="back" /></Press></Glass>
         <View style={{ flex: 1, paddingHorizontal: 10 }} pointerEvents="none">
           <T serif style={{ fontSize: 22, lineHeight: 26 }} numberOfLines={1}>{cat.name === 'Tudo' ? 'Todas as estruturas' : cat.name}</T>
@@ -65,7 +71,7 @@ export default function Atlas() {
       </View>
 
       {/* Ferramentas */}
-      <View style={[styles.tools, { top: ins.top + 60 }]} pointerEvents="box-none">
+      <View style={[styles.tools, { top: ins.top + 60, right: side }]} pointerEvents="box-none">
         <Tool icon="view" label="Vista" on={panel === 'view'} onPress={() => togglePanel('view')} />
         <Tool icon="cut" label="Corte" on={!!ui?.cut.on} onPress={() => togglePanel('cut')} />
         {ui?.skinReady && <Tool icon="skin" label="Pele" on={!!ui?.skin} onPress={() => eng?.setSkin(!ui.skin)} />}
@@ -73,7 +79,7 @@ export default function Atlas() {
 
       {/* Legenda do movimento ou da demonstração */}
       {ui?.caption && (
-        <Animated.View entering={pop} exiting={Platform.OS === 'web' ? undefined : FadeOut.duration(150)} style={[styles.caption, { top: ins.top + 112 }]} pointerEvents="none">
+        <Animated.View entering={pop} exiting={Platform.OS === 'web' ? undefined : FadeOut.duration(150)} style={[styles.caption, { bottom: above, right: side }]} pointerEvents="none">
           <Glass style={styles.capIn}>
             {ui.demoStep ? <T weight="bold" style={{ fontSize: 12, color: accent, marginBottom: 2 }}>{ui.demoStep}</T> : null}
             <T style={{ fontSize: 14, lineHeight: 20 }}>{ui.caption}</T>
@@ -81,9 +87,9 @@ export default function Atlas() {
         </Animated.View>
       )}
 
-      {/* Painel de vistas ou de corte, logo acima da ficha */}
+      {/* Painel de vistas ou de corte, logo abaixo dos botões */}
       {panel && ui && (
-        <Animated.View key={panel} entering={pop} exiting={Platform.OS === 'web' ? undefined : FadeOutDown.duration(150)} style={[styles.panel, { bottom: bottom + 12 }]}>
+        <Animated.View key={panel} entering={pop} exiting={Platform.OS === 'web' ? undefined : FadeOut.duration(150)} style={[styles.panel, { top: ins.top + 108, right: side }]}>
           <Glass style={styles.panelIn}>
             {panel === 'view' ? (
               <>
@@ -108,7 +114,8 @@ export default function Atlas() {
       <Sheet
         ref={sheet}
         low={250}
-        onVisible={h => { setBottom(h); eng?.setInsetBottom(h); }}
+        wide={wide ? 1 : 0}
+        onVisible={wide ? undefined : h => { setBottom(h); eng?.setInsetBottom(h); }}
         header={sel ? <DetailHeader it={sel} onClose={() => eng?.deselect()} /> : <Tabs value={ui?.cat ?? 'face'} onChange={id => { setPanel(null); eng?.setCut(false); eng?.setCat(id); }} />}
       >
         {sel && eng && ui ? <Detail key={sel.id} it={sel} eng={eng} ui={ui} /> : <Browse eng={eng} ui={ui} />}

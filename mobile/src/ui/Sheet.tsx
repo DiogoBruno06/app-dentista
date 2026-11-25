@@ -11,9 +11,10 @@ export type Snap = 'low' | 'mid' | 'high';
 export type SheetRef = { snap: (s: Snap) => void };
 const drawer = Easing.bezier(0.32, 0.72, 0, 1);
 
-type Props = { header: ReactNode; children: ReactNode; low: number; onVisible?: (h: number) => void; onSnap?: (s: Snap) => void };
+type Props = { header: ReactNode; children: ReactNode; low: number; wide?: number; onVisible?: (h: number) => void; onSnap?: (s: Snap) => void };
+export const SIDE_W = 400;
 
-export const Sheet = forwardRef<SheetRef, Props>(function Sheet({ header, children, low, onVisible, onSnap }, ref) {
+export const Sheet = forwardRef<SheetRef, Props>(function Sheet({ header, children, low, wide, onVisible, onSnap }, ref) {
   const c = usePalette();
   const { height } = useWindowDimensions();
   const ins = useSafeAreaInsets();
@@ -43,6 +44,13 @@ export const Sheet = forwardRef<SheetRef, Props>(function Sheet({ header, childr
   });
 
   const st = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
+  // Tela larga (tablet, computador): painel fixo à direita, sem arrasto.
+  if (wide) return (
+    <View style={[styles.side, { width: SIDE_W, top: ins.top + 16, bottom: ins.bottom + 16, backgroundColor: c.card, borderColor: c.line, shadowColor: '#3c2c1c' }]}>
+      <View style={{ paddingTop: 14 }}>{header}</View>
+      <View style={{ flex: 1 }}>{children}</View>
+    </View>
+  );
   return (
     <Animated.View style={[styles.sheet, { height: H + 40, backgroundColor: c.card, borderColor: c.line, shadowColor: '#3c2c1c' }, st]}>
       <GestureDetector gesture={pan}>
@@ -58,6 +66,7 @@ export const Sheet = forwardRef<SheetRef, Props>(function Sheet({ header, childr
 
 const styles = StyleSheet.create({
   sheet: { position: 'absolute', left: 0, right: 0, bottom: -40, borderTopLeftRadius: 22, borderTopRightRadius: 22, borderWidth: StyleSheet.hairlineWidth, shadowOpacity: 0.12, shadowRadius: 18, shadowOffset: { width: 0, height: -4 }, elevation: 12 },
+  side: { position: 'absolute', right: 16, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', shadowOpacity: 0.12, shadowRadius: 18, shadowOffset: { width: 0, height: 4 }, elevation: 12 },
   grab: { alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
   bar: { width: 38, height: 5, borderRadius: 3 },
 });

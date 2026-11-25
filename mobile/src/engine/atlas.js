@@ -41,7 +41,7 @@ export class AtlasEngine {
     this.listeners = new Set();
     this.frameListeners = new Set();
     this.size = { w: 1, h: 1 };
-    this.inset = 0; this.insetTarget = 0;
+    this.inset = 0; this.insetTarget = 0; this.insetR = 0; this.insetRTarget = 0;
     this.ui = { cat: 'face', sel: null, skin: false, skinReady: false, cut: { on: false, axis: 'x', depth: 0.5 }, view: null, side: 1, caption: null, motion: false, demo: false, jaw: false };
     this.cut = { on: false, axis: 'x', off: 0, sign: 1, plane: new THREE.Plane() };
     this.medialCut = false;
@@ -217,13 +217,18 @@ export class AtlasEngine {
   }
   // Área coberta embaixo (ficha aberta): o modelo é centralizado no espaço que sobra.
   setInsetBottom(px) { this.insetTarget = px; }
+  // Área coberta à direita (ficha lateral em telas largas).
+  setInsetRight(px) { this.insetRTarget = px; }
   updateProjection() {
-    const { w, h } = this.size, c = this.camera, k = this.inset;
-    // Desloca o quadro para cima metade da área coberta, sem mudar a escala.
-    if (k > 0.5) c.setViewOffset(w, h, 0, k / 2, w, h); else c.clearViewOffset();
+    const { w, h } = this.size, c = this.camera, k = this.inset, r = this.insetR;
+    // Desloca o quadro metade da área coberta (para cima ou para a esquerda), sem mudar a escala.
+    if (k > 0.5 || r > 0.5) c.setViewOffset(w, h, r / 2, k / 2, w, h); else c.clearViewOffset();
     c.updateProjectionMatrix();
   }
-  fit(d) { return d * Math.max(1, Math.pow(0.95 / (this.camera.aspect || 1), 0.75)); }
+  fit(d) {
+    const { w, h } = this.size, a = w > 10 && h > 10 ? (w - this.insetRTarget) / h : this.camera.aspect || 1;
+    return d * Math.max(1, Math.pow(0.95 / a, 0.75));
+  }
 
   // ---------- Câmera ----------
   flyTo(v) {
@@ -342,7 +347,7 @@ export class AtlasEngine {
   }
   viewFor(it) {
     const c = CAT[it.cat].view, v = it.view || {}, a = this.anchors[it.id];
-    return { dir: v.dir || c.dir, dist: v.dist || clamp(a.size * 3.4, 2.4, 4), target: [a.local.x, a.local.y, a.local.z] };
+    return { dir: v.dir || c.dir, dist: v.dist || clamp(a.size * 4, 2.8, 4.6), target: [a.local.x, a.local.y, a.local.z] };
   }
   select(id) {
     const it = ITEM[id];
@@ -636,8 +641,10 @@ export class AtlasEngine {
     if (!this.ready) return;
     const dt = Math.min(0.05, (t - (this.last ?? t)) / 1000);
     this.last = t;
-    if (Math.abs(this.insetTarget - this.inset) > 0.5) {
-      this.inset += (this.insetTarget - this.inset) * (1 - Math.exp(-dt / 0.1));
+    if (Math.abs(this.insetTarget - this.inset) > 0.5 || Math.abs(this.insetRTarget - this.insetR) > 0.5) {
+      const f = 1 - Math.exp(-dt / 0.1);
+      this.inset += (this.insetTarget - this.inset) * f;
+      this.insetR += (this.insetRTarget - this.insetR) * f;
       this.updateProjection();
     }
     this.stepFly(t); this.stepOrbit(dt);

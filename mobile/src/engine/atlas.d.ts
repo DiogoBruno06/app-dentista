@@ -29,6 +29,7 @@ export class AtlasEngine {
   loadSkin(buf: ArrayBuffer): void;
   resize(w: number, h: number): void;
   setInsetBottom(px: number): void;
+  setInsetRight(px: number): void;
   orbit(dx: number, dy: number): void;
   release(vx?: number, vy?: number): void;
   zoom(scale: number): void;
